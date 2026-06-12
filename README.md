@@ -14,16 +14,22 @@ Activate your Python virtual environment:
 
 ```bash
 source .venv/bin/activate
+```
 
 ## Run it
-docker compose up -d --build
 
+```
+docker compose up -d --build
+```
 
 ## Try it out
+```
 curl -X POST "http://localhost:8000/api/checkaphish" \
      -H "Content-Type: application/json" \
      -d '{"url": "[https://192.1.1.1/evil-website"}'
-
+```
 
 ## Run tests 
+```
 docker compose run --rm test 
+```
