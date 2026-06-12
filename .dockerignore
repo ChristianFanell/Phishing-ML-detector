@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+eda_plots/
+src/training/
+src/tests/
+src/eda.py
+.git/
+.gitignore
+README.md
+.env

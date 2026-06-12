@@ -1,0 +1,81 @@
+services:
+  phishing-api:
+    container_name: phishing-ml-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn src.app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  prometheus:
+      image: prom/prometheus:latest
+      container_name: prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        - prometheus_data:/prometheus
+      restart: unless-stopped
+      depends_on:
+        - phishing-api
+  loki:
+      image: grafana/loki:latest
+      container_name: loki-database
+      ports:
+        - "3100:3100"
+      command: -config.file=/etc/loki/local-config.yaml
+      restart: unless-stopped
+      volumes:
+        - loki_data:/loki
+
+  promtail:
+      image: grafana/promtail:latest
+      container_name: promtail-shipper
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+        - /var/lib/docker/containers:/var/lib/docker/containers:ro
+        - ./promtail-config.yml:/etc/promtail/config.yml
+      command: -config.file=/etc/promtail/config.yml
+      restart: unless-stopped
+      depends_on:
+        - loki
+
+  grafana:
+        image: grafana/grafana:latest
+        container_name: grafana-dashboard
+        ports:
+          - "3000:3000"
+        environment:
+          - GF_SECURITY_ADMIN_PASSWORD=admin 
+        restart: unless-stopped
+        depends_on:
+          - prometheus
+          - loki
+        volumes:
+              - grafana_data:/var/lib/grafana
+
+  test:
+      build: .
+      command: python -m pytest src/tests/ -v -s
+      environment:
+        - GOOGLE_SAFE_BROWSING_API_KEY=leffevettu
+      volumes:
+        - .:/app
+
+volumes:
+  prometheus_data:
+  loki_data:
+  grafana_data:
